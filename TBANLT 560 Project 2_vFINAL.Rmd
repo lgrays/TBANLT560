@@ -55,7 +55,7 @@ round(prop.table(table(BreastCancer$Class)),3)
 plot(BreastCancer)
 ```
 
-### GRAPH ALL DEPENDENT VARIABLES AGAINST THE INDEPENDENT ONE (CLASS)
+### GRAPH ALL INDEPENDENT VARIABLES AGAINST THE DEPENDENT ONE (CLASS)
 ```{r}
 ggplot()+
   geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Cl.thickness),fill=factor(BreastCancer$Class)),
@@ -131,7 +131,7 @@ ggplot()+
 
 ```
 
-###TAKE A LOOK AT WHAT VARIABLES ARE MOST CORRELATED
+### TAKE A LOOK AT WHAT VARIABLES ARE MOST CORRELATED
 ### IT APPEARS THAT THE MOST CORRELATED WITH CLASS ARE CELL.SIZE, CELL.SHAPE, AND BARE.NUCLEI AT .82; CI THICKNESS, MARG.ADHESION, BL. CROMATIN, AND NORMAL NUCLEOLI ARE ALSO HIGHLY CORRELATED WITH CLASS. MITOSIS IS THE LEAST CORRELATED WITH CLASS
 
 ```{r}
@@ -258,7 +258,7 @@ rf <- randomForest(Class ~ .,BreastCancer.train)
 myrf.pred <- predict(rf, BreastCancer.train)
 table(myrf.pred, BreastCancer.train$Class)
 ```
-#WOW!
+## WOW!
 
 ###############
 ENSEMBLE
