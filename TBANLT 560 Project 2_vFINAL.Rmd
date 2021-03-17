@@ -1,0 +1,292 @@
+---
+title: "TBANLT 560 Project 2- FINAL!!!"
+author: "Lindsey Grays"
+date: "03/18/2021"
+output:
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath("C:/Users/lindseyg/OneDrive - Bill & Melinda Gates Foundation/TBANLT 560"))
+```
+ 
+```{r}
+library(mlbench)
+library(e1071)
+library(klaR)
+library(nnet)
+library(MASS)
+library(rpart)
+library(randomForest)
+library(ggplot2)
+library(caret)
+library(nnet)
+library(caretEnsemble)
+```
+##LOAD DATA IN
+```{r}
+data("BreastCancer")
+```
+
+### GET RID OF ID COLUMN AND NAS TO AVOID ISSUES WHEN MODELING
+### TAKE A LOOK AT THE SUMMARY STATS AND STRUCTURE OF THE DATA
+```{r}
+BreastCancer <- na.omit(BreastCancer) 
+BreastCancer$Id <- NULL
+summary(BreastCancer)
+str(BreastCancer)
+```
+
+### LOOK AT THE DISTRIBUTION OF BENIGN VS MALIGNANT
+### THANKFULLY IT APPEARS THAT MOST TUMORS ARE BENIGN
+```{r}
+ggplot(data = BreastCancer, aes(x = Class, fill = Class)) +
+  geom_bar() + labs(x= "Type of Breast Tumor Present", y = "Total Number of Patients")
+```
+```{r}
+round(prop.table(table(BreastCancer$Class)),3)
+```
+
+
+### DATA EXPLORATION
+### PLOT THE VARIABLES
+```{r}
+plot(BreastCancer)
+```
+
+### GRAPH ALL DEPENDENT VARIABLES AGAINST THE DEPENDENT ONE (CLASS)
+```{r}
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Cl.thickness),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("CI Thickness")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Cell.size),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("Cell Size")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Cell.shape),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("Cell Shape")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Marg.adhesion),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("Marg Adhesion")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Bare.nuclei),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("Bare Nuclei")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Bl.cromatin),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("Bl Cromatin")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Normal.nucleoli),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("Normal Nucleoli")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Mitoses),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("Mitoses")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+ggplot()+
+  geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Epith.c.size),fill=factor(BreastCancer$Class)),
+           position = "stack")+
+  scale_x_discrete("Epith.c.size")+
+  scale_y_continuous("Number of Patients")+
+  guides(fill=guide_legend(title="Class"))+
+  scale_fill_manual(values=c("blue","red"))
+
+```
+
+###TAKE A LOOK AT WHAT VARIABLES ARE MOST CORRELATED
+### IT APPEARS THAT THE MOST CORRELATED WITH CLASS ARE CELL.SIZE, CELL.SHAPE, AND BARE.NUCLEI AT .82; CI THICKNESS, MARG.ADHESION, BL. CROMATIN, AND NORMAL NUCLEOLI ARE ALSO HIGHLY CORRELATED WITH CLASS. MITOSIS IS THE LEAST CORRELATED WITH CLASS
+
+```{r}
+library(Hmisc)
+data("BreastCancer")
+BreastCancer <- na.omit(BreastCancer) 
+BreastCancer$Id <- NULL
+BreastCancer$Class<-as.numeric(BreastCancer$Class)
+BreastCancer$Cl.thickness<-as.numeric(BreastCancer$Cl.thickness)
+BreastCancer$Cell.size<-as.numeric(BreastCancer$Cell.size)
+BreastCancer$Cell.shape<-as.numeric(BreastCancer$Cell.shape)
+BreastCancer$Marg.adhesion<-as.numeric(BreastCancer$Marg.adhesion)
+BreastCancer$Epith.c.size<-as.numeric(BreastCancer$Epith.c.size)
+BreastCancer$Bare.nuclei<-as.numeric(BreastCancer$Bare.nuclei)
+BreastCancer$Bl.cromatin<-as.numeric(BreastCancer$Bl.cromatin)
+BreastCancer$Normal.nucleoli<-as.numeric(BreastCancer$Normal.nucleoli)
+BreastCancer$Mitoses<-as.numeric(BreastCancer$Mitoses)
+M <-cor(BreastCancer)
+M
+```
+ 
+
+### SPLIT DATA INTO TRAINING (80%) AND EVALUATION SET (20%)
+```{r}
+data("BreastCancer")
+BreastCancer <- na.omit(BreastCancer) 
+BreastCancer$Id <- NULL
+set.seed(2)
+partition <- createDataPartition(BreastCancer$Class, p =0.8, list = FALSE)
+BreastCancer.train<- BreastCancer[partition, ]
+cat("the dimension of the training dataset is (", dim(BreastCancer.train), ")")
+```
+```{r}
+BreastCancer.test <- BreastCancer[-partition,]
+cat("the dimension of the test dataset is (", dim(BreastCancer.test), ")")
+#ALTERNATIVE CODE:
+#ind <- sample(2, nrow(BreastCancer), replace = TRUE, prob=c(0.8, 0.2))
+```
+
+############################
+MODELING
+############################
+
+#SVM
+```{r}
+svmRadial <- svm(Class ~ ., BreastCancer.train)
+mysvm.pred <- predict(svmRadial, BreastCancer.train)
+table(mysvm.pred,BreastCancer.train$Class)
+```
+
+
+#NB
+```{r}
+naive_bayes <- NaiveBayes(Class ~ ., BreastCancer.train)
+mynb.pred <- predict(naive_bayes,BreastCancer.train)
+table(mynb.pred$class,BreastCancer.train$Class)
+```
+
+#MYNNET
+```{r}
+nnet <- nnet(Class ~ ., BreastCancer.train, size=1)
+mynnet.pred <- predict(nnet,BreastCancer.train,type="class")
+table(mynnet.pred,BreastCancer.train$Class)
+```
+
+#Decision trees
+```{r}
+library(rpart)
+rpart <- rpart(Class ~ ., BreastCancer.train)
+plot(rpart); text(rpart) # in "iris_tree.ps"
+summary(rpart)
+mytree.pred <- predict(rpart,BreastCancer.train,type="class")
+table(mytree.pred,BreastCancer.train$Class)
+```
+# Leave-1-Out Cross Validation (LOOCV)
+```{r}
+ans <- numeric(length(BreastCancer.train[,1]))
+for (i in 1:length(BreastCancer.train[,1])) {
+  mytree <- rpart(Class ~ ., BreastCancer.train[-i,])
+  mytree.pred <- predict(mytree,BreastCancer.train[i,],type="class")
+  ans[i] <- mytree.pred
+}
+ans <- factor(ans,labels=levels(BreastCancer.train$Class))
+table(ans,BreastCancer.train$Class)
+```
+
+
+#Quadratic Discriminant Analysis
+```{r}
+BreastCancer.train$Class<-as.numeric(BreastCancer.train$Class)
+BreastCancer.train$Cl.thickness<-as.numeric(BreastCancer.train$Cl.thickness)
+BreastCancer.train$Cell.size<-as.numeric(BreastCancer.train$Cell.size)
+BreastCancer.train$Cell.shape<-as.numeric(BreastCancer.train$Cell.shape)
+BreastCancer.train$Marg.adhesion<-as.numeric(BreastCancer.train$Marg.adhesion)
+BreastCancer.train$Epith.c.size<-as.numeric(BreastCancer.train$Epith.c.size)
+BreastCancer.train$Bare.nuclei<-as.numeric(BreastCancer.train$Bare.nuclei)
+BreastCancer.train$Bl.cromatin<-as.numeric(BreastCancer.train$Bl.cromatin)
+BreastCancer.train$Normal.nucleoli<-as.numeric(BreastCancer.train$Normal.nucleoli)
+BreastCancer.train$Mitoses<-as.numeric(BreastCancer.train$Mitoses)
+qda <- qda(Class ~ ., BreastCancer.train)
+myqda.pred <- predict(qda, BreastCancer.train)
+table(myqda.pred$class,BreastCancer.train$Class)
+```
+
+#Regularised Discriminant Analysis
+```{r}
+data("BreastCancer")
+BreastCancer <- na.omit(BreastCancer) 
+BreastCancer$Id <- NULL
+set.seed(2)
+partition <- createDataPartition(BreastCancer$Class, p =0.8, list = FALSE)
+BreastCancer.train<- BreastCancer[partition, ]
+BreastCancer.test <- BreastCancer[-partition,]
+```
+```{r}
+binda <- rda(Class ~ ., BreastCancer.train)
+myrda.pred <- predict(binda, BreastCancer.train)
+table(myrda.pred$class,BreastCancer.train$Class)
+```
+
+#Random Forests
+```{r}
+rf <- randomForest(Class ~ .,BreastCancer.train)
+myrf.pred <- predict(rf, BreastCancer.train)
+table(myrf.pred, BreastCancer.train$Class)
+```
+#WOW!
+
+###############
+ENSEMBLE
+##############
+#stack
+```{r}
+set.seed(100)
+
+control_stacking <- trainControl(method="repeatedcv", number=5, repeats=2, savePredictions=TRUE, classProbs=TRUE)
+
+algorithms_to_use <- c('rpart', 'svmRadial', 'rf', 'naive_bayes', 'nnet')
+
+stacked_models <- caretList(Class ~., data=BreastCancer.train, trControl=control_stacking, methodList=algorithms_to_use)
+
+stacking_results <- resamples(stacked_models)
+
+summary(stacking_results)
+```
+```{r}
+# stack using glm
+stackControl <- trainControl(method="repeatedcv", number=5, repeats=3, savePredictions=TRUE, classProbs=TRUE)
+
+set.seed(100)
+
+glm_stack <- caretStack(stacked_models, method="glm", metric="Accuracy", trControl=stackControl)
+
+print(glm_stack)
+```
+
+
+
