@@ -55,7 +55,7 @@ round(prop.table(table(BreastCancer$Class)),3)
 plot(BreastCancer)
 ```
 
-### GRAPH ALL DEPENDENT VARIABLES AGAINST THE DEPENDENT ONE (CLASS)
+### GRAPH ALL DEPENDENT VARIABLES AGAINST THE INDEPENDENT ONE (CLASS)
 ```{r}
 ggplot()+
   geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Cl.thickness),fill=factor(BreastCancer$Class)),
