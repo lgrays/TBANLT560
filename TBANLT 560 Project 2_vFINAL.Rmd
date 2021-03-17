@@ -24,7 +24,7 @@ library(caret)
 library(nnet)
 library(caretEnsemble)
 ```
-##LOAD DATA IN
+## LOAD DATA IN
 ```{r}
 data("BreastCancer")
 ```
@@ -152,7 +152,6 @@ BreastCancer$Mitoses<-as.numeric(BreastCancer$Mitoses)
 M <-cor(BreastCancer)
 M
 ```
- 
 
 ### SPLIT DATA INTO TRAINING (80%) AND EVALUATION SET (20%)
 ```{r}
@@ -175,7 +174,7 @@ cat("the dimension of the test dataset is (", dim(BreastCancer.test), ")")
 MODELING
 ############################
 
-#SVM
+# SVM
 ```{r}
 svmRadial <- svm(Class ~ ., BreastCancer.train)
 mysvm.pred <- predict(svmRadial, BreastCancer.train)
@@ -183,21 +182,21 @@ table(mysvm.pred,BreastCancer.train$Class)
 ```
 
 
-#NB
+# NB
 ```{r}
 naive_bayes <- NaiveBayes(Class ~ ., BreastCancer.train)
 mynb.pred <- predict(naive_bayes,BreastCancer.train)
 table(mynb.pred$class,BreastCancer.train$Class)
 ```
 
-#MYNNET
+# NNET
 ```{r}
 nnet <- nnet(Class ~ ., BreastCancer.train, size=1)
 mynnet.pred <- predict(nnet,BreastCancer.train,type="class")
 table(mynnet.pred,BreastCancer.train$Class)
 ```
 
-#Decision trees
+# Decision trees
 ```{r}
 library(rpart)
 rpart <- rpart(Class ~ ., BreastCancer.train)
@@ -219,7 +218,7 @@ table(ans,BreastCancer.train$Class)
 ```
 
 
-#Quadratic Discriminant Analysis
+# Quadratic Discriminant Analysis
 ```{r}
 BreastCancer.train$Class<-as.numeric(BreastCancer.train$Class)
 BreastCancer.train$Cl.thickness<-as.numeric(BreastCancer.train$Cl.thickness)
@@ -236,7 +235,7 @@ myqda.pred <- predict(qda, BreastCancer.train)
 table(myqda.pred$class,BreastCancer.train$Class)
 ```
 
-#Regularised Discriminant Analysis
+# Regularised Discriminant Analysis
 ```{r}
 data("BreastCancer")
 BreastCancer <- na.omit(BreastCancer) 
@@ -252,7 +251,7 @@ myrda.pred <- predict(binda, BreastCancer.train)
 table(myrda.pred$class,BreastCancer.train$Class)
 ```
 
-#Random Forests
+# Random Forests
 ```{r}
 rf <- randomForest(Class ~ .,BreastCancer.train)
 myrf.pred <- predict(rf, BreastCancer.train)
@@ -264,6 +263,7 @@ table(myrf.pred, BreastCancer.train$Class)
 ENSEMBLE
 ##############
 #stack
+
 ```{r}
 set.seed(100)
 
