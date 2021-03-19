@@ -7,7 +7,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = normalizePath("C:/Users/lindseyg/OneDrive - Bill & Melinda Gates Foundation/TBANLT 560"))
 ```
  
@@ -24,23 +24,28 @@ library(caret)
 library(nnet)
 library(caretEnsemble)
 ```
-## LOAD DATA IN
+##LOAD DATA IN
 ```{r}
 data("BreastCancer")
+### 699 observations with 11 variables
 ```
 
-### GET RID OF ID COLUMN AND NAS TO AVOID ISSUES WHEN MODELING
-### TAKE A LOOK AT THE SUMMARY STATS AND STRUCTURE OF THE DATA
+### REMOVE ID COLUMN AND NAS TO AVOID ISSUES WHEN MODELING
+### LOOK AT THE SUMMARY STATS AND STRUCTURE OF THE DATA
 ```{r}
 BreastCancer <- na.omit(BreastCancer) 
 BreastCancer$Id <- NULL
 summary(BreastCancer)
 str(BreastCancer)
+
+###As recommended in the provided supplementary code I've omitted NAs and removed the ID column, which results in a dataset with 683 records and 10 variables
 ```
 
 ### LOOK AT THE DISTRIBUTION OF BENIGN VS MALIGNANT
-### THANKFULLY IT APPEARS THAT MOST TUMORS ARE BENIGN
+###INTERPRETATION: THANKFULLY, IT APPEARS THAT MOST TUMORS ARE BENIGN (65% vs. 35%)
 ```{r}
+####Using ggplot I graphed the distribution of benign and malignant tumors in the dataset. 
+
 ggplot(data = BreastCancer, aes(x = Class, fill = Class)) +
   geom_bar() + labs(x= "Type of Breast Tumor Present", y = "Total Number of Patients")
 ```
@@ -51,11 +56,15 @@ round(prop.table(table(BreastCancer$Class)),3)
 
 ### DATA EXPLORATION
 ### PLOT THE VARIABLES
+###In an attempt to see if there was any clear correlation, I also plotted every variable. 
 ```{r}
 plot(BreastCancer)
 ```
 
-### GRAPH ALL INDEPENDENT VARIABLES AGAINST THE DEPENDENT ONE (CLASS)
+### GRAPH ALL DEPENDENT VARIABLES AGAINST THE INDEPENDENT ONE (CLASS)
+####To further explore the data, I also plotted each variable against class to see if there was any clear correlation and what distributions are. 
+###Interpretation: Though very nuanced, there does appear to be a correlation with the size of the shape, thickness, adhesion, and nuclei that correlates with malignant tumors despite the larger number of benign tumors had by patients. As it relates to the presence of a benign tumor it appears that a great number of patients had all variables present in at least some small amount. What was quite distinctive was the distribution of CI Thickness which was correlated with a great number of patient?s benign tumors (in considerably low to medium range amounts), but also alarming present in a great deal of patient?s and in a great deal of cells associated with malignant tumors. BI Cromatin was also interestingly distributed among both benign and malignant tumors, perhaps illustrating that many patients with benign tumors have it present in some small amount but once beyond 6nm the presence is indicative of a malignant tumor.
+
 ```{r}
 ggplot()+
   geom_bar(data = BreastCancer, aes(x=factor(BreastCancer$Cl.thickness),fill=factor(BreastCancer$Class)),
@@ -131,8 +140,11 @@ ggplot()+
 
 ```
 
-### TAKE A LOOK AT WHAT VARIABLES ARE MOST CORRELATED
+###TAKE A LOOK AT WHAT VARIABLES ARE MOST CORRELATED
 ### IT APPEARS THAT THE MOST CORRELATED WITH CLASS ARE CELL.SIZE, CELL.SHAPE, AND BARE.NUCLEI AT .82; CI THICKNESS, MARG.ADHESION, BL. CROMATIN, AND NORMAL NUCLEOLI ARE ALSO HIGHLY CORRELATED WITH CLASS. MITOSIS IS THE LEAST CORRELATED WITH CLASS
+### Lastly, I created a correlation matrix ? again hoping to see in addition to a visualization what the actual numbers appeared to suggest about correlation between variables, but paying special attention the variables with high correlation to ?Class?.
+#Interpretation:
+#IT APPEARS THAT THE MOST CORRELATED WITH CLASS ARE CELL.SIZE, CELL.SHAPE, AND BARE.NUCLEI AT .82; CI THICKNESS, MARG.ADHESION, BL. CROMATIN, AND NORMAL NUCLEOLI ARE ALSO HIGHLY CORRELATED WITH CLASS. MITOSIS IS THE LEAST CORRELATED WITH CLASS
 
 ```{r}
 library(Hmisc)
@@ -152,6 +164,7 @@ BreastCancer$Mitoses<-as.numeric(BreastCancer$Mitoses)
 M <-cor(BreastCancer)
 M
 ```
+ 
 
 ### SPLIT DATA INTO TRAINING (80%) AND EVALUATION SET (20%)
 ```{r}
@@ -173,8 +186,8 @@ cat("the dimension of the test dataset is (", dim(BreastCancer.test), ")")
 ############################
 MODELING
 ############################
-
-# SVM
+#I used the models that were used in iris, but ultimately decided to take only a handful into the ensemble based on their accuracy rates. Below are the models and their resulting matrices.
+#SVM
 ```{r}
 svmRadial <- svm(Class ~ ., BreastCancer.train)
 mysvm.pred <- predict(svmRadial, BreastCancer.train)
@@ -182,21 +195,21 @@ table(mysvm.pred,BreastCancer.train$Class)
 ```
 
 
-# NB
+#NB
 ```{r}
 naive_bayes <- NaiveBayes(Class ~ ., BreastCancer.train)
 mynb.pred <- predict(naive_bayes,BreastCancer.train)
 table(mynb.pred$class,BreastCancer.train$Class)
 ```
 
-# NNET
+#MYNNET
 ```{r}
 nnet <- nnet(Class ~ ., BreastCancer.train, size=1)
 mynnet.pred <- predict(nnet,BreastCancer.train,type="class")
 table(mynnet.pred,BreastCancer.train$Class)
 ```
 
-# Decision trees
+#Decision trees
 ```{r}
 library(rpart)
 rpart <- rpart(Class ~ ., BreastCancer.train)
@@ -218,7 +231,7 @@ table(ans,BreastCancer.train$Class)
 ```
 
 
-# Quadratic Discriminant Analysis
+#Quadratic Discriminant Analysis
 ```{r}
 BreastCancer.train$Class<-as.numeric(BreastCancer.train$Class)
 BreastCancer.train$Cl.thickness<-as.numeric(BreastCancer.train$Cl.thickness)
@@ -235,7 +248,7 @@ myqda.pred <- predict(qda, BreastCancer.train)
 table(myqda.pred$class,BreastCancer.train$Class)
 ```
 
-# Regularised Discriminant Analysis
+#Regularised Discriminant Analysis
 ```{r}
 data("BreastCancer")
 BreastCancer <- na.omit(BreastCancer) 
@@ -246,24 +259,25 @@ BreastCancer.train<- BreastCancer[partition, ]
 BreastCancer.test <- BreastCancer[-partition,]
 ```
 ```{r}
-binda <- rda(Class ~ ., BreastCancer.train)
-myrda.pred <- predict(binda, BreastCancer.train)
+rda <- rda(Class ~ ., BreastCancer.train)
+myrda.pred <- predict(rda, BreastCancer.train)
 table(myrda.pred$class,BreastCancer.train$Class)
 ```
 
-# Random Forests
+#Random Forests
 ```{r}
 rf <- randomForest(Class ~ .,BreastCancer.train)
 myrf.pred <- predict(rf, BreastCancer.train)
 table(myrf.pred, BreastCancer.train$Class)
 ```
-## WOW!
+#WOW!
 
 ###############
 ENSEMBLE
 ##############
-#stack
+#Based on their impressive accuracy rates, models: rpart, svmRadial, rf, naive_bayes, nnet were moved into an ensemble which did result in appreciably better accuracy: 0.9659123, which could be hugely impactful in furthering what we know about which variables cause both benign and malignant tumors.
 
+#stack
 ```{r}
 set.seed(100)
 
